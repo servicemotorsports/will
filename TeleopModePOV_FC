@@ -1,0 +1,56 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+
+
+@TeleOp(name = "TeleOp POV + FieldCentric", group = "TeleOp")
+public class TeleopModePOV_FC extends OpMode {
+    Drivetrain drivetrain;
+    OdopodsV1 odopods;
+    boolean fieldCentric = true;
+
+    @Override
+    public void init() {
+        drivetrain = new Drivetrain(hardwareMap);
+        odopods = new OdopodsV1(hardwareMap);
+        odopods.setPosition(0, 0, 0);
+        telemetry.addLine("TeleOp Initialized");
+        telemetry.update();
+    }
+
+    @Override
+    public void loop() {
+        odopods.update();
+
+        if (gamepad1.y) fieldCentric = true;
+        if (gamepad1.x) fieldCentric = false;
+
+        double rawDrive = -gamepad1.left_stick_y;
+        double rawStrafe = gamepad1.left_stick_x;
+        double rawTurn = gamepad1.right_stick_x;
+
+        double drive = shapeInput(rawDrive);
+        double strafe = shapeInput(rawStrafe);
+        double turn = shapeInput(rawTurn);
+
+        if (fieldCentric) {
+            double heading = Math.toRadians(odopods.getHeading());
+            double rotatedX = strafe * Math.cos(heading) - drive * Math.sin(heading);
+            double rotatedY = strafe * Math.sin(heading) + drive * Math.cos(heading);
+            drivetrain.drivewithcorrections(rotatedY, rotatedX, turn);
+        } else {
+            drivetrain.drivewithcorrections(drive, strafe, turn);
+        }
+
+        telemetry.addData("X (in)", odopods.getx());
+        telemetry.addData("Y (in)", odopods.gety());
+        telemetry.addData("Heading (deg)", odopods.getHeading());
+        telemetry.addData("Mode", fieldCentric ? "Field-Centric" : "Robot-Centric");
+        telemetry.update();
+    }
+
+    private double shapeInput(double input) {
+        return Math.signum(input) * Math.pow(Math.abs(input), 2.0);
+    }
+}
